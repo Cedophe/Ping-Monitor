@@ -72,23 +72,26 @@ def is_reachable(ip):
 
 
 # ==== MAIN MONITORING LOOP ====
-def monitor_devices():
-    status_map = {}  # Tracks known status of devices
+def monitor_devices(): # Define the main loop function
+    status_map = {}  # Create a dictionary to track last known status of each IP
 
-    while True:
-        log("🔄 Checking devices...")
-        with open(DEVICE_FILE, "r") as f:
-            for line in f:
-                if not line.strip():
+    while True: # Infinite loop to keep checking
+        log("🔄 Checking devices...") # Print/log the current monitoring cycle
+        with open(DEVICE_FILE, "r") as f: # Open the file with device list
+            for line in f: # Loop through each line in the file
+                if not line.strip(): # Skip empty lines
                     continue
                 try:
+                    # Split the line into name and IP (e.g., Router1,192.168.1.1)
                     name, ip = line.strip().split(",")
                 except ValueError:
+                    # If line format is invalid, log an error and skip it
                     log(f"[FORMAT ERROR] Check line: {line}")
                     continue
-
+                    # Ping the device to check if it’s currently reachable
                 reachable = is_reachable(ip)
-
+                
+                # If the IP is seen for the first time, store its current state
                 if ip not in status_map:
                     status_map[ip] = reachable
 
