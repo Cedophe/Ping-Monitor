@@ -2,16 +2,21 @@ import os
 import time
 import smtplib
 import platform
+import requests
 from email.mime.text import MIMEText
 from datetime import datetime
+
 
 # ==== CONFIGURATION ====
 DEVICE_FILE = "devices.txt"
 PING_INTERVAL = 10  # seconds
 
 EMAIL_SENDER = "cedophe@gmail.com"
-EMAIL_PASSWORD = "wpvu ikgv tllc bfpy"  # Gmail App Password
+EMAIL_PASSWORD = "xhhi crce lkch yscm"  # Gmail App Password
 EMAIL_RECEIVER = "cedophe@gmail.com"
+
+TELEGRAM_TOKEN = "7508783139:AAH6QLpLVcMLdQlxSVs8XSeW64d1AtOAbfM"
+TELEGRAM_CHAT_ID = "5971065330"
 
 LOG_FILE = "monitor_log.txt"  # Optional: local logging
 
@@ -21,7 +26,7 @@ def log(msg):
     timestamped = f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] {msg}"
     print(timestamped)
     with open(LOG_FILE, "a", encoding="utf-8") as logf:
-        logf.write(timestamped + "\n")
+        logf.write(timestamped + "\n")  
 
 
 # ==== EMAIL FUNCTION ====
@@ -39,6 +44,22 @@ def send_email_alert(subject, message):
         log(f"[EMAIL SENT] {subject}")
     except Exception as e:
         log(f"[EMAIL FAILED] {e}")
+
+# ==== TELEGRAM FUNCTION ====
+def send_telegram_alert(message):
+    try:
+        url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
+        data = {
+            "chat_id": TELEGRAM_CHAT_ID,
+            "text": message
+        }
+        response = requests.post(url, data=data)
+        if response.status_code == 200:
+            log(f"[TELEGRAM SENT] {message}")
+        else:
+            log(f"[TELEGRAM FAILED] {response.text}")
+    except Exception as e:
+        log(f"[TELEGRAM ERROR] {e}")
 
 
 # ==== PING FUNCTION (OS-Compatible) ====
@@ -73,13 +94,17 @@ def monitor_devices():
 
                 # DOWN alert
                 if not reachable and status_map[ip]:
-                    log(f"[❌ DOWN] {name} ({ip}) is NOT reachable!")
+                    msg = f"⚠️ ALERT: {name} ({ip}) is DOWN!"
+                    log(f"[❌ DOWN] {msg}")
                     send_email_alert(f"{name} DOWN", f"⚠️ ALERT: {name} ({ip}) is DOWN!")
+                    send_telegram_alert(msg)
 
                 # UP recovery
                 elif reachable and not status_map[ip]:
-                    log(f"[✅ BACK ONLINE] {name} ({ip}) is reachable.")
+                    msg = f"✅ {name} ({ip}) is back online."
+                    log(f"[✅ BACK ONLINE] {msg}")
                     send_email_alert(f"{name} is BACK ONLINE", f"✅ {name} ({ip}) is back online.")
+                    send_telegram_alert(msg)
 
                 else:
                     log(f"[OK] {name} ({ip}) status unchanged.")
